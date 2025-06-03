@@ -1,0 +1,15 @@
+streamlit
+groq
+python-docx
+PyPDF2
+python-linkedin-v2
+requests
+python-dotenv
+beautifulsoup4
+pillow
+pandas
+numpy
+streamlit-extras
+streamlit-option-menu
+streamlit-chat
+jinja2
