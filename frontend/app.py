@@ -3,7 +3,7 @@ import sys
 import os
 from pathlib import Path
 
-# Add backend directory to Python path
+# Add backend directory to Python path for 
 sys.path.append(str(Path(__file__).parent.parent))
 
 from backend.ai_processor import AIProcessor
