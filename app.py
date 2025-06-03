@@ -3,9 +3,11 @@ import sys
 import os
 from pathlib import Path
 
-# Add backend directory to Python path - updated for root level
-sys.path.append(str(Path(__file__).parent))
+# Add the project root directory to Python path
+current_dir = Path(__file__).parent
+sys.path.insert(0, str(current_dir))
 
+# Now import backend modules
 from backend.ai_processor import AIProcessor
 from backend.file_utils import FileUtils
 import json
