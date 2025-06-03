@@ -1,6 +1,6 @@
 import re
 
-def generate_mock_interview_questions(response):
+def process_interview_questions(response):
     try:
         questions_text = response.choices[0].message.content.strip()
 
@@ -24,5 +24,5 @@ def generate_mock_interview_questions(response):
         return questions_list
 
     except Exception as e:
-        print(f"Error generating mock interview questions: {e}")
+        print(f"Error processing interview questions: {e}")
         return [] 

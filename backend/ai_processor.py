@@ -5,6 +5,7 @@ import json
 from dotenv import load_dotenv
 import re # Import re for clean_and_tokenize
 import streamlit as st
+from .question_processor import process_interview_questions
 
 load_dotenv()
 
@@ -500,8 +501,8 @@ class AIProcessor:
             # --- End of refined question extraction logic ---
 
             print(f"Generated questions list: {questions_list}")
-            return questions_list
+            return process_interview_questions(questions_list)
 
         except Exception as e:
-            print(f"Error generating mock interview questions: {e}")
+            print(f"Error in generate_mock_interview_questions: {e}")
             return [] 
