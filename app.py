@@ -3,8 +3,8 @@ import sys
 import os
 from pathlib import Path
 
-# Add backend directory to Python path
-sys.path.append(str(Path(__file__).parent.parent))
+# Add backend directory to Python path - updated for root level
+sys.path.append(str(Path(__file__).parent))
 
 from backend.ai_processor import AIProcessor
 from backend.file_utils import FileUtils
@@ -176,10 +176,7 @@ def show_profile_builder():
                     text_to_process = linkedin_text
                 elif linkedin_url:
                     # Basic attempt with URL (might not work due to scraping restrictions)
-                    # For a real application, consider using a third-party API for LinkedIn data
                     st.warning("Attempting basic extraction from URL... results may vary.")
-                    # In a real scenario, you would call a backend function that might use a service
-                    # that can handle LinkedIn URLs. For this example, we'll just use the URL as text input for the AI.
                     text_to_process = f"LinkedIn Profile URL: {linkedin_url}"
                     
                 if text_to_process:
@@ -195,7 +192,7 @@ def show_profile_builder():
                             st.session_state.extracted_data = extracted_data
                             st.success("Information extracted successfully!")
                             
-                            # Show extracted data for review (similar to resume flow)
+                            # Show extracted data for review
                             st.subheader("Extracted Information")
                             
                             # Basic Information
@@ -363,290 +360,6 @@ def show_manual_entry():
                 })
                 st.session_state.interview_step = 'work_history'
                 st.rerun()
-    
-    # Work History Section
-    elif st.session_state.interview_step == 'work_history':
-        st.subheader("Work Experience")
-        
-        # Show existing work history
-        if st.session_state.work_history:
-            st.write("Your work history:")
-            for i, job in enumerate(st.session_state.work_history):
-                with st.expander(f"{job.get('title', '')} at {job.get('company', '')}"):
-                    st.write(f"**Dates:** {job.get('dates', '')}")
-                    st.write("**Responsibilities:**")
-                    for resp in job.get('responsibilities', []):
-                        st.write(f"- {resp}")
-                    if st.button("Remove", key=f"remove_{i}"):
-                        st.session_state.work_history.pop(i)
-                        st.rerun()
-        
-        # Add new job experience
-        st.write("Add a new position:")
-        with st.form("work_history_form"):
-            col1, col2 = st.columns(2)
-            with col1:
-                job_title = st.text_input("Job Title", help="Your role or position")
-                company = st.text_input("Company Name")
-                dates = st.text_input("Employment Dates", help="e.g., Jan 2020 - Present")
-            
-            with col2:
-                responsibilities = st.text_area(
-                    "Key Responsibilities & Achievements",
-                    help="List your main responsibilities and achievements. Use action verbs and include metrics where possible.",
-                    height=150
-                )
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.form_submit_button("Add Position"):
-                    if job_title and company:
-                        # Process responsibilities into bullet points
-                        resp_list = [r.strip() for r in responsibilities.split('\n') if r.strip()]
-                        st.session_state.work_history.append({
-                            'title': job_title,
-                            'company': company,
-                            'dates': dates,
-                            'responsibilities': resp_list
-                        })
-                        st.rerun()
-            
-            with col2:
-                if st.form_submit_button("Next: Skills", type="primary"):
-                    st.session_state.profile_data['experience'] = st.session_state.work_history
-                    st.session_state.interview_step = 'skills'
-                    st.rerun()
-    
-    # Skills Section
-    elif st.session_state.interview_step == 'skills':
-        st.subheader("Skills & Expertise")
-
-        # Ensure skills data is in dictionary format with expected categories
-        if 'skills' in st.session_state.profile_data and isinstance(st.session_state.profile_data['skills'], list):
-            # If skills is a list (e.g., from extraction), convert to dictionary with a default category
-            st.session_state.profile_data['skills'] = {'General Skills': st.session_state.profile_data['skills']}
-        elif 'skills' not in st.session_state.profile_data or not isinstance(st.session_state.profile_data['skills'], dict):
-             # If skills is missing or not a dict, initialize with empty categories
-             st.session_state.profile_data['skills'] = {
-                 'Technical Skills': [],
-                 'Soft Skills': [],
-                 'Tools & Technologies': [],
-                 'Languages': []
-             }
-
-
-        # Define the skill categories to display in the form
-        # Use the categories already in profile_data if it's a dictionary, otherwise use defaults
-        current_skill_categories = st.session_state.profile_data['skills'].keys()
-        default_skill_categories = ['Technical Skills', 'Soft Skills', 'Tools & Technologies', 'Languages', 'General Skills']
-        # Combine existing and default categories, ensuring unique and desired order
-        skill_categories_order = [cat for cat in default_skill_categories if cat in current_skill_categories] + [cat for cat in current_skill_categories if cat not in default_skill_categories]
-
-
-        with st.form("skills_form"):
-            st.write("Add your skills in each category:")
-
-            # Use the potentially updated categories
-            edited_skill_data = {}
-            for category in skill_categories_order:
-                # Use the skills data from the potentially updated session state
-                skills_list = st.session_state.profile_data['skills'].get(category, [])
-                skills_input = st.text_area(
-                    f"{category}",
-                    value=", ".join(skills_list),
-                    help=f"Enter {category.lower()} separated by commas",
-                    key=f"skills_input_{category}"
-                )
-                # Temporarily store edited skills outside session state until form submit
-                edited_skill_data[category] = [s.strip() for s in skills_input.split(',') if s.strip()]
-
-            # Metrics and Achievements
-            st.subheader("Key Metrics & Achievements")
-            edited_metrics = st.text_area(
-                "List your key metrics and achievements",
-                value="\n".join(st.session_state.metrics), # Assuming metrics is already a list in session_state
-                help="Enter one achievement per line. Include specific numbers and results where possible.",
-                height=150,
-                key="metrics_input"
-            )
-
-            col1, col2 = st.columns(2)
-            with col1:
-                # Adjusted button to work within the form
-                if st.form_submit_button("Previous: Work History"):
-                    st.session_state.interview_step = 'work_history'
-                    st.rerun()
-
-            with col2:
-                # Add the submit button for the skills form
-                if st.form_submit_button("Next: Education", type="primary"):
-                    # Save the edited skill data and metrics to session state
-                    st.session_state.profile_data['skills'] = edited_skill_data
-                    st.session_state.metrics = [m.strip() for m in edited_metrics.split('\n') if m.strip()]
-                    st.session_state.interview_step = 'education'
-                    st.rerun()
-    
-    # Education Section
-    elif st.session_state.interview_step == 'education':
-        st.subheader("Education & Certifications")
-        
-        with st.form("education_form"):
-            # Education
-            st.write("Education History:")
-            education = st.text_area(
-                "List your educational background",
-                value=st.session_state.profile_data.get('education', ''),
-                help="Enter one education entry per line. Include degree, major, institution, and graduation date.",
-                height=150
-            )
-            
-            # Certifications
-            st.write("Professional Certifications:")
-            certifications = st.text_area(
-                "List your certifications",
-                value=st.session_state.profile_data.get('certifications', ''),
-                help="Enter one certification per line. Include certification name, issuing organization, and date.",
-                height=150
-            )
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.form_submit_button("Previous: Skills"):
-                    st.session_state.interview_step = 'skills'
-                    st.rerun()
-            
-            with col2:
-                if st.form_submit_button("Next: Projects", type="primary"):
-                    st.session_state.profile_data.update({
-                        'education': [edu.strip() for edu in education.split('\n') if edu.strip()],
-                        'certifications': [cert.strip() for cert in certifications.split('\n') if cert.strip()]
-                    })
-                    st.session_state.interview_step = 'projects'
-                    st.rerun()
-    
-    # Projects Section
-    elif st.session_state.interview_step == 'projects':
-        st.subheader("Projects & Portfolio")
-        
-        with st.form("projects_form"):
-            projects = st.text_area(
-                "Describe your key projects",
-                value=st.session_state.profile_data.get('projects', ''),
-                help="""Enter one project per line. For each project, include:
-                - Project name
-                - Your role
-                - Technologies used
-                - Key outcomes or results
-                - Impact on the organization""",
-                height=200
-            )
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.form_submit_button("Previous: Education"):
-                    st.session_state.interview_step = 'education'
-                    st.rerun()
-            
-            with col2:
-                if st.form_submit_button("Review Profile", type="primary"):
-                    st.session_state.profile_data['projects'] = [proj.strip() for proj in projects.split('\n') if proj.strip()]
-                    st.session_state.interview_step = 'review'
-                    st.rerun()
-    
-    # Review Section
-    elif st.session_state.interview_step == 'review':
-        st.subheader("Review Your Profile")
-        
-        # Display all collected information
-        st.write("### Basic Information")
-        st.write(f"**Name:** {st.session_state.profile_data.get('full_name', '')}")
-        st.write(f"**Email:** {st.session_state.profile_data.get('email', '')}")
-        st.write(f"**Phone:** {st.session_state.profile_data.get('phone', '')}")
-        st.write(f"**Location:** {st.session_state.profile_data.get('location', '')}")
-        st.write(f"**LinkedIn:** {st.session_state.profile_data.get('linkedin', '')}")
-        
-        st.write("### Professional Summary")
-        st.write(st.session_state.profile_data.get('about_me', ''))
-        
-        st.write("### Work Experience")
-        for job in st.session_state.profile_data.get('experience', []):
-            st.write(f"**{job.get('title', '')} at {job.get('company', '')}** ({job.get('dates', '')})")
-            for resp in job.get('responsibilities', []):
-                st.write(f"- {resp}")
-        
-        st.write("### Skills")
-        for category, skills in st.session_state.profile_data.get('skills', {}).items():
-            if skills:
-                st.write(f"**{category}:**")
-                st.write(", ".join(skills))
-        
-        st.write("### Education")
-        for edu in st.session_state.profile_data.get('education', []):
-            st.write(f"- {edu}")
-        
-        st.write("### Certifications")
-        for cert in st.session_state.profile_data.get('certifications', []):
-            st.write(f"- {cert}")
-        
-        st.write("### Projects")
-        for project in st.session_state.profile_data.get('projects', []):
-            st.write(f"- {project}")
-        
-        # Action buttons
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            if st.button("Edit Profile", use_container_width=True):
-                st.session_state.interview_step = 'basic_info'
-                st.rerun()
-        
-        with col2:
-            if st.button("Generate Resume", type="primary", use_container_width=True):
-                with st.spinner("Generating your ATS-friendly resume..."):
-                    resume_text = ai_processor.generate_resume(st.session_state.profile_data)
-                    if resume_text:
-                        # Save resume to temporary file
-                        resume_path = FileUtils.save_temp_file(
-                            resume_text.encode(),
-                            'pdf'
-                        )
-                        if resume_path:
-                            with open(resume_path, 'rb') as f:
-                                st.download_button(
-                                    "Download Resume PDF",
-                                    f,
-                                    file_name=f"resume_{datetime.now().strftime('%Y%m%d')}.pdf",
-                                    mime="application/pdf",
-                                    use_container_width=True
-                                )
-        
-        with col3:
-            if st.button("Generate Portfolio", use_container_width=True):
-                with st.spinner("Generating your portfolio website..."):
-                    portfolio_path = portfolio_generator.generate_portfolio(st.session_state.profile_data)
-                    if portfolio_path:
-                        # Read the generated portfolio file
-                        with open(portfolio_path, 'rb') as f:
-                            portfolio_html = f.read()
-
-                        # Create a download button for the portfolio
-                        st.download_button(
-                            "Download Portfolio HTML",
-                            portfolio_html,
-                            file_name=f"portfolio_{datetime.now().strftime('%Y%m%d')}.html",
-                            mime="text/html",
-                            use_container_width=True
-                        )
-
-                        # Add subdomain text input
-                        st.text_input(
-                            "Enter desired subdomain for hosting (Optional)",
-                            value="your-name",
-                            help="e.g., 'your-name.your-domain.com'. This is for your reference and doesn't automatically host the site."
-                        )
-
-                        st.success("Portfolio generated successfully! Download the HTML file above.")
-                    else:
-                        st.error("Failed to generate portfolio. Please try again.")
 
 def show_preview():
     st.title("Profile Preview")
@@ -793,12 +506,11 @@ def show_cover_letter_generator():
     # Get the list of available tones from the backend
     available_tones_list = ai_processor.get_cover_letter_templates()
 
-    # Define tone details with icons and descriptions (can be expanded)
+    # Define tone details with icons and descriptions
     tone_details = {
         "Professional": {"name": "Professional", "icon": "💼", "description": "Balanced, confident tone"},
         "Formal": {"name": "Formal", "icon": "🎩", "description": "Traditional, respectful tone"},
         "Friendly": {"name": "Friendly", "icon": "🤝", "description": "Friendly, approachable tone"},
-        # Add other tones here as needed
     }
 
     # Display tone options in a grid with icons and descriptions
@@ -813,7 +525,7 @@ def show_cover_letter_generator():
                 st.markdown(f"### {template['icon']}")
                 if st.button(
                     template['name'],
-                    key=f"tone_button_{tone_name}", # Use a unique key
+                    key=f"tone_button_{tone_name}",
                     use_container_width=True,
                     type="primary" if tone_name == selected_tone else "secondary"
                 ):
@@ -870,15 +582,15 @@ def show_cover_letter_generator():
                     background-color: white;
                     border: 1px solid #e0e0e0;
                     border-radius: 5px;
-                    color: #333333; /* Dark grey for main text for visibility */
+                    color: #333333;
                     font-size: 14px;
                     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
                 }
                 .cover-letter-preview * {
-                    color: #333333; /* Ensure all elements inherit a darker color */
+                    color: #333333;
                 }
                 .cover-letter-preview strong {
-                    color: #000000; /* Black for emphasis for high contrast */
+                    color: #000000;
                     font-weight: 600;
                 }
                 </style>
@@ -1032,7 +744,7 @@ def show_profile_optimizer():
         
         if suggestions:
             for category, items in suggestions.items():
-                with st.expander(f"{category} Suggestions"): # Use expander for cleaner view
+                with st.expander(f"{category} Suggestions"):
                     for item in items:
                         st.write(f"- {item}")
         else:
@@ -1059,31 +771,26 @@ def show_profile_optimizer():
             else:
                  st.info("No missing keywords identified based on this job description.")
 
-        # Auto-rewrite Suggestions (Simulated)
+        # Auto-rewrite Suggestions
         st.subheader("Auto-rewrite Suggestions")
         st.info("Auto-rewrite suggestions would appear here, offering improved phrasing for your profile based on the job description.")
-        # TODO: Implement actual auto-rewrite suggestion generation if needed later
 
         # Action Buttons
         st.subheader("3. Actions")
         col1, col2 = st.columns(2)
         with col1:
-            # This button would ideally apply the rewrite suggestions
             if st.button("Apply Suggestions", type="primary", use_container_width=True, key="apply_optimizer_suggestions"):
-                 # Call the backend to apply suggestions (currently placeholder)
                  optimized_profile = ai_processor.apply_optimization_suggestions(
                      st.session_state.profile_data,
-                     suggestions # Pass suggestions if backend needs them
+                     suggestions
                  )
                  st.session_state.profile_data = optimized_profile
                  st.session_state.current_step = 'preview'
                  st.rerun()
         
         with col2:
-            # This button navigates back to manual entry to allow manual edits based on suggestions
             if st.button("Update Profile Manually", use_container_width=True, key="update_profile_manual_optimizer"):
                 st.session_state.current_step = 'manual_entry'
-                # Removed temporary success message
                 st.rerun()
 
     else:
@@ -1142,8 +849,6 @@ def show_mock_interviewer():
             st.warning("Please provide a job description first!")
         else:
             with st.spinner("Generando preguntas..."):
-                # This will call the backend method (to be implemented next)
-                
                 # Add a check for Groq client before calling the backend
                 import sys
                 print(f"Python Path: {sys.path}")
@@ -1152,11 +857,11 @@ def show_mock_interviewer():
                 
                 if ai_processor.groq_client is None:
                     st.error("AI Processor is not initialized. Please ensure GROQ_API_KEY is set correctly.")
-                    questions = [] # Ensure questions is empty if client is None
+                    questions = []
                 else:
                     questions = ai_processor.generate_mock_interview_questions(
                         job_description_text,
-                        st.session_state.profile_data # Pass profile data for context
+                        st.session_state.profile_data
                     )
 
                 # Save the generated questions to session state
