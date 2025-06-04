@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import Mock, patch
-from backend.ai_processor import AIProcessor
+from backend.main import AIProcessor
 import json
 
 @pytest.fixture

@@ -1,0 +1,34 @@
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Cover Letter - Sudha Penumatcha</title>
+</head>
+<body>
+    <p>[Hiring Manager Name]<br>
+    [Company Name]<br>
+    [Address]<br>
+    [City, State, ZIP Code]<br>
+    [Date]</p>
+
+    <p>Dear [Hiring Manager Name],</p>
+
+    <p>I am writing to express my interest in the Sr. Specialist, Global Compliance Operations position at [Company Name]. With over 20 years of experience in implementing digital solutions across Assurance, Tax, Audit, and Health Domains, I am confident in my ability to contribute to your team's mission of enabling a culture of ethics and compliance.</p>
+
+    <p>In my current role as Sr. Manager at PricewaterhouseCoopers, I have developed a strong expertise in building and leading multi-disciplinary teams to deliver high-quality solutions. My experience spans both Cloud and On-Premise platforms, with a focus on leveraging technology to solve complex problems. I have successfully architected and led various projects, including the development of web-based applications such as the Valuation Insights Platform & Reporting and Payee Tax Reporting systems.</p>
+
+    <p>I bring a strong technical background in data analytics, with proficiency in tools such as SQL Server, Power BI, and Python. My ability to navigate and interpret large datasets, identify patterns, and provide actionable insights aligns well with the requirements of the Pulse program. Additionally, my experience with automation tools like UiPath and MS Power Automate has allowed me to streamline processes and enhance operational efficiency.</p>
+
+    <p>My professional journey has equipped me with a deep understanding of compliance requirements, particularly in the healthcare sector. I have a proven track record of collaborating with cross-functional teams to ensure adherence to regulatory standards and drive meaningful conclusions. My ability to communicate effectively with both technical and non-technical stakeholders will enable me to partner successfully with business leaders and compliance teams.</p>
+
+    <p>I hold advanced certifications in Software Engineering and Network Centered Computing, which complement my technical expertise. My educational background, including an MS in Computer Science from George Mason University, further underscores my commitment to staying at the forefront of technology and compliance.</p>
+
+    <p>I am particularly drawn to [Company Name] because of its commitment to fostering a culture of ethics and compliance. I am excited about the opportunity to contribute my skills and experience to support the Global Compliance Operations team in achieving its goals.</p>
+
+    <p>Thank you for considering my application. I would welcome the opportunity to discuss how my background and skills align with the needs of your team. Please feel free to contact me at [Your Contact Information] to arrange a conversation at your convenience.</p>
+
+    <p>Sincerely,<br>
+    Sudha Penumatcha</p>
+</body>
+</html>
