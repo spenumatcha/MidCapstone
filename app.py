@@ -3,10 +3,21 @@ import sys
 import os
 from pathlib import Path
 
-# Add backend directory to Python path - updated for root level
-sys.path.append(str(Path(__file__).parent))
+# Add the project root directory to Python path
+project_root = Path(__file__).parent.absolute()
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
 
-from backend.main import AIProcessor
+try:
+    # Try importing from backend.main
+    from backend.main import AIProcessor
+except ImportError as e:
+    st.error(f"Error importing AIProcessor: {str(e)}")
+    st.error(f"Current Python path: {sys.path}")
+    st.error(f"Project root: {project_root}")
+    st.error("Please ensure all dependencies are installed and the backend directory is in the Python path.")
+    st.stop()
+
 from backend.file_utils import FileUtils
 import json
 import base64
