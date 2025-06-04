@@ -129,6 +129,8 @@ class AIProcessor:
         if not self.groq_client:
             return bullet_points # Return original if no client
         try:
+            # Join bullet points with newlines, properly escaped
+            bullet_points_text = "\n- ".join(bullet_points)
             prompt = f"""
             Optimize the following resume bullet points for a resume, making them concise, action-oriented, and quantifiable where possible.
             If a job description is provided, tailor the bullet points to be relevant to that description.
@@ -137,7 +139,7 @@ class AIProcessor:
             {job_description if job_description else "N/A"}
 
             Bullet Points:
-            {'- ' + '\\n- '.join(bullet_points)}
+            - {bullet_points_text}
 
             Optimized Bullet Points (as a numbered or bulleted list):
             """
@@ -157,7 +159,7 @@ class AIProcessor:
             )
             optimized_text = chat_completion.choices[0].message.content.strip()
             # Simple split by lines for now, assuming each line is an optimized bullet point
-            return [line.strip() for line in optimized_text.split('\\n') if line.strip()]
+            return [line.strip() for line in optimized_text.split('\n') if line.strip()]
         except Exception as e:
             print(f"Error optimizing bullet points: {e}")
             return bullet_points # Return original on error
