@@ -325,104 +325,151 @@ class AIProcessor:
         return min(score, 100) # Cap score at 100
 
     def get_optimization_suggestions(self, profile_data: Dict, job_description: str = "") -> Dict[str, List[str]]:
-        """Simulate generating optimization suggestions based on profile and job description."""
-        # Placeholder: Implement actual suggestion logic here
-        suggestions = {
-            "Summary": [],
-            "Experience": [],
-            "Skills": [],
-            "General": []
-        }
+        """Generate intelligent optimization suggestions using LLM based on profile and job description."""
+        if not self.groq_client:
+            return {"General": ["AI suggestions unavailable. Please check your API key."]}
         
-        profile_text = json.dumps(profile_data).lower()
-        job_desc_text = job_description.lower()
+        try:
+            # Prepare profile data for the prompt
+            profile_summary = {
+                "summary": profile_data.get('summary', profile_data.get('about_me', '')),
+                "experience": profile_data.get('experience', []),
+                "skills": profile_data.get('skills', {}),
+                "education": profile_data.get('education', []),
+                "projects": profile_data.get('projects', [])
+            }
+            
+            prompt = f"""
+            Analyze the following profile data and job description to provide specific, actionable suggestions for improving the profile/resume.
+            Focus on making the profile more competitive for the target role.
+            Return the suggestions in JSON format with categories: Summary, Experience, Skills, and General.
+            Each category should contain a list of specific, actionable suggestions.
 
-        # Existing suggestions based on profile completeness
-        if not profile_data.get('summary'):
-            suggestions['Summary'].append("Consider adding a professional summary.")
-        elif len(profile_data['summary'].split()) < 20:
-             suggestions['Summary'].append("Your summary could be more detailed (aim for 3-4 sentences).")
-             
-        if not profile_data.get('experience'):
-             suggestions['Experience'].append("Add your work experience with bullet points.")
-        else:
-            for job in profile_data['experience']:
-                if not job.get('responsibilities'):
-                    suggestions['Experience'].append(f"Add bullet points for {job.get('title', '')} at {job.get('company', '')}.")
-                else:
-                    for resp in job['responsibilities']:
-                        if not any(char.isdigit() for char in resp):
-                             suggestions['Experience'].append(f"Quantify achievements in bullet point: '{resp}'")
-                             
-        # Suggestions based on skills format/completeness
-        skills_data = profile_data.get('skills')
-        if not skills_data:
-             suggestions['Skills'].append("List your key technical and soft skills.")
-        elif isinstance(skills_data, dict):
-             if not any(skills_data.values()):
-                  suggestions['Skills'].append("Categorize your skills (e.g., Technical, Soft Skills).")
-             for category, skill_list in skills_data.items():
-                 if not skill_list:
-                      suggestions['Skills'].append(f"Add skills to the '{category}' category.")
+            Profile Data:
+            {json.dumps(profile_summary, indent=2)}
 
-        # Simulate suggestions based on job description keywords
-        if job_description:
-             job_keywords = set(word.strip('.,!?;:()[]{} Buried').lower() for word in job_desc_text.split() if len(word) > 2)
-             profile_words = set(word.strip('.,!?;:()[]{} Buried').lower() for word in profile_text.split() if len(word) > 2)
-             missing_keywords = job_keywords - profile_words
-             
-             if missing_keywords:
-                 suggestions['General'].append(f"Consider adding relevant keywords from the job description, such as: {', '.join(list(missing_keywords)[:5])}.") # Show up to 5 missing
+            Job Description:
+            {job_description}
 
-        # Example general suggestion
-        suggestions['General'].append("Ensure your contact information is up-to-date.")
-        suggestions['General'].append("Tailor your resume/profile keywords to specific job descriptions.")
-             
-        return {k: v for k, v in suggestions.items() if v} # Return only categories with suggestions
+            Provide suggestions in this JSON format:
+            {{
+                "Summary": ["suggestion1", "suggestion2"],
+                "Experience": ["suggestion1", "suggestion2"],
+                "Skills": ["suggestion1", "suggestion2"],
+                "General": ["suggestion1", "suggestion2"]
+            }}
+            """
+            
+            chat_completion = self.groq_client.chat.completions.create(
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are an expert resume and profile optimizer. Provide specific, actionable suggestions to improve the profile for the target role."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                model=self.model_name,
+                temperature=0.7,
+            )
+            
+            suggestions_text = chat_completion.choices[0].message.content.strip()
+            
+            # Extract JSON from the response
+            try:
+                # Find JSON in the response (it might be wrapped in markdown code blocks)
+                json_match = re.search(r'```json\n(.*?)\n```', suggestions_text, re.DOTALL)
+                if json_match:
+                    suggestions_text = json_match.group(1)
+                
+                suggestions = json.loads(suggestions_text)
+                return {k: v for k, v in suggestions.items() if v}  # Return only categories with suggestions
+            except json.JSONDecodeError:
+                print(f"Error parsing suggestions JSON: {suggestions_text}")
+                return {"General": ["Error processing suggestions. Please try again."]}
+                
+        except Exception as e:
+            print(f"Error generating optimization suggestions: {e}")
+            return {"General": ["Error generating suggestions. Please try again."]}
 
     def analyze_keywords(self, profile_data: Dict, job_description: str = "") -> Dict[str, List[str]]:
-        """Analyze keywords based on relevant profile sections (skills, summary) and job description, filtering out stop words."""
+        """Analyze keywords using LLM to identify strong matches and gaps between profile and job description."""
+        if not self.groq_client:
+            return {"strong": [], "missing": ["AI analysis unavailable. Please check your API key."]}
         
-        # Extract and process relevant text from profile data (skills and summary/about)
-        profile_relevant_text = ""
-        
-        # Add Summary/About Me text
-        if profile_data.get('summary'):
-            profile_relevant_text += profile_data['summary'] + " "
-        elif profile_data.get('about_me'):
-             profile_relevant_text += profile_data['about_me'] + " "
-             
-        # Add Skills text (focus on Technical and Soft Skills if dictionary)
-        skills_data = profile_data.get('skills')
-        if skills_data:
-            if isinstance(skills_data, list): # Case: Skills extracted as a list
-                profile_relevant_text += ", ".join(skills_data) + " "
-            elif isinstance(skills_data, dict): # Case: Skills entered manually as a dictionary
-                # Focus on Technical Skills and Soft Skills categories
-                technical_skills = ", ".join(skills_data.get('Technical Skills', []))
-                soft_skills = ", ".join(skills_data.get('Soft Skills', []))
-                profile_relevant_text += f"{technical_skills}, {soft_skills}" + " "
+        try:
+            # Prepare profile data for the prompt
+            profile_summary = {
+                "summary": profile_data.get('summary', profile_data.get('about_me', '')),
+                "skills": profile_data.get('skills', {}),
+                "experience": profile_data.get('experience', []),
+                "projects": profile_data.get('projects', [])
+            }
+            
+            prompt = f"""
+            Analyze the following profile data and job description to identify:
+            1. Strong keyword matches (skills, technologies, and qualifications that are clearly present in the profile)
+            2. Missing keywords (important skills, technologies, or qualifications from the job description that are not clearly present in the profile)
 
-        # Process job description text
-        job_desc_text = job_description.lower()
+            Profile Data:
+            {json.dumps(profile_summary, indent=2)}
 
-        # Clean and tokenize the relevant profile text and job description
-        profile_relevant_words = set(self.clean_and_tokenize(profile_relevant_text))
-        job_keywords = set(self.clean_and_tokenize(job_desc_text))
+            Job Description:
+            {job_description}
 
-        # Perform gap analysis using only relevant keywords
-        strong_keywords = list(job_keywords.intersection(profile_relevant_words))
-        missing_keywords = list(job_keywords - profile_relevant_words)
-        
-        # Sort for consistent output (optional)
-        strong_keywords.sort()
-        missing_keywords.sort()
-        
-        return {
-            "strong": strong_keywords,
-            "missing": missing_keywords
-        }
-        
+            Return the analysis in this JSON format:
+            {{
+                "strong": ["keyword1", "keyword2", ...],
+                "missing": ["keyword1", "keyword2", ...]
+            }}
+
+            Guidelines:
+            - Include only relevant technical skills, tools, methodologies, and key qualifications
+            - Exclude generic terms and common words
+            - Focus on specific, actionable keywords that would be important for the role
+            - For strong matches, only include keywords that are clearly demonstrated in the profile
+            - For missing keywords, prioritize the most important requirements from the job description
+            """
+            
+            chat_completion = self.groq_client.chat.completions.create(
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are an expert at analyzing resumes and job descriptions to identify key skills and qualifications."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                model=self.model_name,
+                temperature=0.5,  # Lower temperature for more focused analysis
+            )
+            
+            analysis_text = chat_completion.choices[0].message.content.strip()
+            
+            # Extract JSON from the response
+            try:
+                # Find JSON in the response (it might be wrapped in markdown code blocks)
+                json_match = re.search(r'```json\n(.*?)\n```', analysis_text, re.DOTALL)
+                if json_match:
+                    analysis_text = json_match.group(1)
+                
+                keywords = json.loads(analysis_text)
+                return {
+                    "strong": sorted(keywords.get("strong", [])),
+                    "missing": sorted(keywords.get("missing", []))
+                }
+            except json.JSONDecodeError:
+                print(f"Error parsing keywords JSON: {analysis_text}")
+                return {"strong": [], "missing": ["Error processing keyword analysis. Please try again."]}
+                
+        except Exception as e:
+            print(f"Error analyzing keywords: {e}")
+            return {"strong": [], "missing": ["Error analyzing keywords. Please try again."]}
+
     def apply_optimization_suggestions(self, profile_data: Dict, suggestions: Dict[str, List[str]]) -> Dict:
         """Simulate applying optimization suggestions (no actual changes made in this placeholder)."""
         # Placeholder: In a real implementation, this would modify profile_data
