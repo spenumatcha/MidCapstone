@@ -32,7 +32,7 @@ ai_processor = AIProcessor()
 portfolio_generator = PortfolioGenerator()
 
 def show_landing_page():
-    st.title("Portfolio and Resume Generator - AI Tool")
+    st.title("Portfolio and Resume Generator Mockup- AI Tool")
     st.markdown("""
     Transform your professional profile into a complete career package:
     - Professional Portfolio Website
